@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>three.js webgl - loaders - MMD loader</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="main.css">
+	<style>
+		body {
+			background-color: #fff;
+			color: #444;
+		}
+
+		a {
+			color: #08f;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="info"></div>
+
+	<script src="js/libs/ammo.wasm.js"></script>
+	<script src="scoreoutputer.min.js"></script>
+	<script src="selfGrading.js"></script>
+	<script>grader()</script>
+	<script type="module">
+
+		import * as THREE from './build/three.module.js';
+		import { GUI } from './jsm/libs/dat.gui.module.js';
+		import { OrbitControls } from './jsm/controls/OrbitControls.js';
+		import { OutlineEffect } from './jsm/effects/OutlineEffect.js';
+		import { MMDLoader } from './jsm/loaders/MMDLoader.js';
+		import { MMDAnimationHelper } from './jsm/animation/MMDAnimationHelper.js';
+
+
+		let scene, renderer, effect;
+		let mesh, helper;
+		let SCREEN_WIDTH = window.innerWidth;
+		let SCREEN_HEIGHT = window.innerHeight;
+		let aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+		let frustumSize = 10;
+		let camera, camera2, camera3, camera4, camera5;
+		let index = 0;
+		const loader = new MMDLoader();
+		let model;
+
+		Ammo().then(function (AmmoLib) {
+
+			Ammo = AmmoLib;
+
+			init();
+			animate();
+
+		});
+
+		function init() {
+
+			const container = document.createElement('div');
+			document.body.appendChild(container);
+			camera = new THREE.OrthographicCamera(0.5 * frustumSize * aspect / - 2, 0.5 * frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 0.1, 1000);
+			camera2 = new THREE.OrthographicCamera(0.25 * frustumSize * aspect / - 2, 0.25 * frustumSize * aspect / 2, 0.5 * frustumSize / 2, 0.5 * frustumSize / - 2, 0.1, 1000);
+			camera3 = new THREE.OrthographicCamera(0.25 * frustumSize * aspect / - 2, 0.25 * frustumSize * aspect / 2, 0.5 * frustumSize / 2, 0.5 * frustumSize / - 2, 0.1, 1000);
+			camera4 = new THREE.OrthographicCamera(0.25 * frustumSize * aspect / - 2, 0.25 * frustumSize * aspect / 2, 0.5 * frustumSize / 2, 0.5 * frustumSize / - 2, 0.1, 1000);
+			camera5 = new THREE.OrthographicCamera(0.25 * frustumSize * aspect / - 2, 0.25 * frustumSize * aspect / 2, 0.5 * frustumSize / 2, 0.5 * frustumSize / - 2, 0.1, 1000);
+			camera.position.z = 30;
+			camera2.position.z = 30;
+			camera3.position.z = 30;
+			camera4.position.z = 30;
+			camera5.position.z = 30;
+
+			// scene
+
+			scene = new THREE.Scene();
+			const ambient = new THREE.AmbientLight(0x666666);
+			scene.add(ambient);
+
+			const directionalLight = new THREE.DirectionalLight(0x887766);
+			directionalLight.position.set(- 1, 1, 1).normalize();
+			scene.add(directionalLight);
+
+			//
+
+			renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			container.appendChild(renderer.domElement);
+			renderer.autoClear = false;
+			effect = new OutlineEffect(renderer);
+
+			const modelFile = 'models/mmd/kizunaai/kizunaai.pmx';
+
+			helper = new MMDAnimationHelper();
+
+
+
+			loader.load(modelFile, function (object) {
+
+				model = object;
+				model.position.y = - 18;
+
+				scene.add(model);
+
+			}, onProgress, null);
+
+			//
+
+			window.addEventListener('resize', onWindowResize);
+			//鏡頭控制
+
+		}
+
+		// keypad
+		document.addEventListener('keydown', logKey);
+
+		function loadJSON(callback) {
+			var xObj = new XMLHttpRequest();
+			xObj.overrideMimeType("application/json");
+			xObj.open('GET', './model_data.json', true);
+			// 1. replace './data.json' with the local path of your file
+			xObj.onreadystatechange = function () {
+				if (xObj.readyState === 4 && xObj.status === 200) {
+					// 2. call your callback function
+					callback(xObj.responseText);
+				}
+			};
+			xObj.send(null);
+		}
+
+		// model
+		function onProgress(xhr) {
+
+			if (xhr.lengthComputable) {
+
+				const percentComplete = xhr.loaded / xhr.total * 100;
+				console.log(Math.round(percentComplete, 2) + '% downloaded');
+
+			}
+
+		}
+
+		function onWindowResize() {
+
+			SCREEN_WIDTH = window.innerWidth;
+			SCREEN_HEIGHT = window.innerHeight;
+			aspect = SCREEN_WIDTH / SCREEN_HEIGHT;
+
+			effect.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+			camera.left = 0.5 * frustumSize * aspect / - 2;
+			camera.right = 0.5 * frustumSize * aspect / 2;
+			camera.top = frustumSize / 2;
+			camera.bottom = - frustumSize / 2;
+			camera.updateProjectionMatrix();
+
+			camera2.left = 0.25 * frustumSize * aspect / - 2;
+			camera2.right = 0.25 * frustumSize * aspect / 2;
+			camera2.top = 0.5 * frustumSize / 2;
+			camera2.bottom = - 0.5 * frustumSize / 2;
+			camera2.updateProjectionMatrix();
+
+			camera3.left = 0.25 * frustumSize * aspect / - 2;
+			camera3.right = 0.25 * frustumSize * aspect / 2;
+			camera3.top = 0.5 * frustumSize / 2;
+			camera3.bottom = - 0.5 * frustumSize / 2;
+			camera3.updateProjectionMatrix();
+
+			camera4.left = 0.25 * frustumSize * aspect / - 2;
+			camera4.right = 0.25 * frustumSize * aspect / 2;
+			camera4.top = 0.5 * frustumSize / 2;
+			camera4.bottom = - 0.5 * frustumSize / 2;
+			camera4.updateProjectionMatrix();
+
+			camera5.left = 0.25 * frustumSize * aspect / - 2;
+			camera5.right = 0.25 * frustumSize * aspect / 2;
+			camera5.top = 0.5 * frustumSize / 2;
+			camera5.bottom = - 0.5 * frustumSize / 2;
+			camera5.updateProjectionMatrix();
+		}
+
+		function logKey(e) {
+			console.log(e.key);
+
+			if (e.key == 'a') {
+				index -= 1;
+				if (index <= 0) {
+					index = 2;
+				}
+				loadJSON(function (response) {
+					var json = JSON.parse(response);
+					var name = json["modellist"][index].location;
+					console.log(name);
+
+					loader.load(name, function (object) {
+						scene.remove(model);
+
+						model = object;
+						model.position.y = - 10;
+						scene.add(model);
+					}, onProgress, null);
+				});
+				console.log(index)
+			}
+			else if (e.key == 'd') {
+				index += 1;
+				if (index >= 3) {
+					index = 0;
+				}
+
+				loadJSON(function (response) {
+					var json = JSON.parse(response);
+
+					var name = json["modellist"][index].location;
+					console.log(name);
+
+					loader.load(name, function (object) {
+						scene.remove(model);
+						model = object;
+						model.position.y = - 10;
+						scene.add(model);
+					}, onProgress, null);
+				});
+				console.log(index)
+			}
+			else if (e.key == '1') {
+
+			}
+
+
+
+		}
+
+		//
+
+		function animate() {
+
+			requestAnimationFrame(animate);
+			render();
+
+		}
+
+		function render() {
+
+			effect.clear();
+
+			effect.setViewport(0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
+			effect.render(scene, camera);
+
+			effect.setViewport(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+			effect.render(scene, camera2);
+
+			effect.setViewport(SCREEN_WIDTH / 2 + SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+			effect.render(scene, camera3);
+
+			effect.setViewport(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+			effect.render(scene, camera4);
+
+			effect.setViewport(SCREEN_WIDTH / 2 + SCREEN_WIDTH / 4, 0, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
+			effect.render(scene, camera5);
+		}
+	</script>
+
+</body>
+
+</html>
